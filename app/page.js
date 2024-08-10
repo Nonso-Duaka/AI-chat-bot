@@ -1,9 +1,11 @@
 'use client';
 
-import { Box, Button, Stack, TextField, Avatar } from '@mui/material';
+import { Box, Button, Stack, TextField, Avatar, CircularProgress } from '@mui/material';
 import { useState, useRef, useEffect } from 'react';
 import BotIcon from '@mui/icons-material/SmartToy';
 import UserIcon from '@mui/icons-material/Person';
+
+const openaiApiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
 
 export default function Home() {
   const [messages, setMessages] = useState([
@@ -37,6 +39,7 @@ export default function Home() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`,
         },
         body: JSON.stringify({
           messages: [...messages, userMessage],
@@ -69,6 +72,10 @@ export default function Home() {
       await reader.read().then(processText);
     } catch (error) {
       console.error('Error sending message:', error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
+      ]);
     }
 
     setIsLoading(false);
@@ -124,36 +131,73 @@ export default function Home() {
           maxHeight="100%"
           sx={{ padding: 1 }}
         >
-          {messages.map((message, index) => (
+          {messages.map((msg, index) => (
             <Box
               key={index}
               display="flex"
-              justifyContent={message.role === 'assistant' ? 'flex-start' : 'flex-end'}
+              justifyContent={msg.role === 'user' ? 'flex-start' : 'flex-end'}
             >
               <Box display="flex" alignItems="center">
-                {message.role === 'assistant' ? (
-                  <Avatar sx={{ bgcolor: 'primary.main' }}>
-                    <BotIcon />
-                  </Avatar>
+                {msg.role === 'user' ? (
+                  <>
+                    <Avatar sx={{ bgcolor: 'secondary.main', mr: 1 }}>
+                      <UserIcon />
+                    </Avatar>
+                    <Box
+                      bgcolor="secondary.main"
+                      color="white"
+                      borderRadius={2}
+                      p={2}
+                      boxShadow={2}
+                      maxWidth="70%"
+                      sx={{ ml: 1, mr: 'auto' }} // Adjusted for alignment
+                    >
+                      <div dangerouslySetInnerHTML={{ __html: msg.content }} />
+                    </Box>
+                  </>
                 ) : (
-                  <Avatar sx={{ bgcolor: 'secondary.main' }}>
-                    <UserIcon />
-                  </Avatar>
+                  <>
+                    <Box
+                      bgcolor="primary.main"
+                      color="white"
+                      borderRadius={2}
+                      p={2}
+                      boxShadow={2}
+                      maxWidth="70%"
+                      sx={{ ml: 'auto', mr: 1 }} // Adjusted for alignment
+                    >
+                      <div dangerouslySetInnerHTML={{ __html: msg.content }} />
+                    </Box>
+                    <Avatar sx={{ bgcolor: 'primary.main', ml: 1 }}>
+                      <BotIcon />
+                    </Avatar>
+                  </>
                 )}
+              </Box>
+            </Box>
+          ))}
+          {isLoading && (
+            <Box display="flex" justifyContent="flex-end">
+              <Box display="flex" alignItems="center">
                 <Box
-                  ml={1}
-                  bgcolor={message.role === 'assistant' ? 'primary.main' : 'secondary.main'}
+                  bgcolor="primary.main"
                   color="white"
                   borderRadius={2}
                   p={2}
                   boxShadow={2}
                   maxWidth="70%"
+                  sx={{ ml: 'auto', mr: 1 }} // Adjusted for alignment
                 >
-                  <div dangerouslySetInnerHTML={{ __html: message.content }} />
+                  <Box display="flex" justifyContent="center" alignItems="center">
+                    <CircularProgress size={20} sx={{ color: 'white' }} />
+                  </Box>
                 </Box>
+                <Avatar sx={{ bgcolor: 'primary.main', ml: 1 }}>
+                  <BotIcon />
+                </Avatar>
               </Box>
             </Box>
-          ))}
+          )}
           <div ref={messagesEndRef} />
         </Stack>
         <Stack direction="row" spacing={2}>
